@@ -1,0 +1,57 @@
+# --- Python / Streamlit / LangChain ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.log
+*.sqlite3
+*.db
+.DS_Store
+
+# --- Environments ---
+.env
+.venv/
+venv/
+env/
+ENV/
+.idea/
+.vscode/
+.ipynb_checkpoints/
+
+# --- Streamlit cache ---
+.streamlit/secrets.toml
+.streamlit/config.toml  # keep local theme config out of git if personal
+.streamlit/cache/
+.cache/
+
+# --- Playwright / Chromium data ---
+playwright/.cache/
+playwright-report/
+tests/**/.playwright/
+**/user_data_dir/
+**/playwright/.cache/
+**/pyppeteer/
+
+# --- Data / temporary files ---
+data/
+tmp/
+*.csv
+*.json
+*.md
+*.pdf
+*.xlsx
+*.zip
+
+# --- OS files ---
+Thumbs.db
+Desktop.ini
+
+# --- Docker / build artifacts ---
+*.bak
+*.tar
+*.gz
+*.egg-info/
+build/
+dist/
+node_modules/

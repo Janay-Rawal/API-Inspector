@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+streamlit
+requests
+httpx
+requests-html
+lxml_html_clean
+langchain
+langchain-groq
+langchain-openai
+openai
+langchain_core
+pydantic
+python-dotenv
+beautifulsoup4
+lxml
+playwright

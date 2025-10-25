@@ -1,13 +1,12 @@
-# backend/summarizer.py
 import os
 from dotenv import load_dotenv
 
-# modern langchain imports
+
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-load_dotenv()  # expects GROQ_API_KEY in your .env
+load_dotenv() 
 
 def summarize_endpoints_groq(endpoints):
     """
@@ -15,7 +14,6 @@ def summarize_endpoints_groq(endpoints):
     endpoints: list[dict(method, path, summary)]
     returns: markdown string
     """
-    # build the prompt with system+human messages (recommended style)
     prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are an assistant for backend developers. "
@@ -29,8 +27,6 @@ def summarize_endpoints_groq(endpoints):
 
     llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
     parser = StrOutputParser()
-
-    # LCEL chain (prompt → llm → text)
     chain = prompt | llm | parser
 
     joined = "\n".join(

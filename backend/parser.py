@@ -1,4 +1,3 @@
-# backend/parser.py
 import re
 import requests
 from bs4 import BeautifulSoup
@@ -45,10 +44,12 @@ def fallback_html_scan(base_url: str):
 
     def extract_endpoints_from_html(html_text: str):
         soup = BeautifulSoup(html_text, "lxml")
+        links = [a.get("href", "") for a in soup.find_all("a", href=True)]
         text = " ".join(
             tag.get_text(" ", strip=True)
             for tag in soup.find_all(["code", "pre", "div", "p"])
         )
+        text += " " + " ".join(links)
         pattern = re.compile(r"(?:(GET|POST|PUT|PATCH|DELETE)\s+)?(/[A-Za-z0-9_\-/{}/\.]+)")
         local_eps = []
         for method, path_str in pattern.findall(text):
@@ -81,14 +82,12 @@ def fallback_html_scan(base_url: str):
             if r.status_code != 200:
                 continue
 
-            # 🧱 Step 1: static parse
             eps = extract_endpoints_from_html(r.text)
             if eps:
                 print(f"✅ Found {len(eps)} endpoints (static HTML)")
                 endpoints.extend(eps)
                 continue
 
-            # 🧩 Step 2: JS-rendered parse
             print(f"⚙️ Rendering {url} with Playwright...")
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
@@ -117,7 +116,6 @@ def verify_live_endpoints(base_url: str, endpoints: list):
         url = base_url.rstrip("/") + ep["path"]
         try:
             r = requests.request(ep["method"], url, timeout=4)
-            # drop empty 200s that look like HTML placeholders
             if 200 <= r.status_code < 500 and "text/html" not in r.headers.get("Content-Type", ""):
                 valid.append(ep)
         except Exception:
@@ -151,6 +149,81 @@ def probe_common_paths(base_url: str):
 
     print(f"Total found: {len(found)}")
     return found
+
+def resolve_ref(spec, ref: str):
+    """Recursively resolve $ref references inside an OpenAPI spec."""
+    if not ref or not isinstance(ref, str):
+        return {}
+    if not ref.startswith("#/"):
+        return {}
+    parts = ref.lstrip("#/").split("/")
+    node = spec
+    for p in parts:
+        node = node.get(p, {})
+    return node
+
+
+def get_example_request_from_spec(spec_json, path, method):
+    """Return an auto-generated JSON structure for a requestBody, if available."""
+    try:
+        op = (
+            spec_json.get("paths", {})
+            .get(path, {})
+            .get(method.lower(), {})
+        )
+        content = (
+            op.get("requestBody", {})
+            .get("content", {})
+            .get("application/json", {})
+        )
+        schema = content.get("schema", {})
+        def resolve_schema(sch):
+            if "$ref" in sch:
+                sch = resolve_ref(spec_json, sch["$ref"])
+                return resolve_schema(sch)
+            if sch.get("type") == "array":
+                items = sch.get("items", {})
+                return [resolve_schema(items)]
+            if sch.get("type") == "object" or "properties" in sch:
+                obj = {}
+                for k, v in sch.get("properties", {}).items():
+                    obj[k] = resolve_schema(v)
+                return obj
+            return {
+                "string": "",
+                "integer": 0,
+                "number": 0.0,
+                "boolean": False,
+            }.get(sch.get("type"), "")
+        
+        example = resolve_schema(schema)
+        return example
+    except Exception as e:
+        print("⚠️ get_example_request_from_spec failed:", e)
+        return None
+    
+def get_example_query_from_spec(spec_json, path, method):
+    """Return a dict of example query parameters if defined in OpenAPI spec."""
+    try:
+        op = spec_json.get("paths", {}).get(path, {}).get(method.lower(), {})
+        params = op.get("parameters", [])
+        if not params:
+            return None
+
+        example = {}
+        for p in params:
+            if p.get("in") == "query":
+                name = p.get("name")
+                ptype = p.get("schema", {}).get("type", "string")
+                example[name] = {
+                    "string": "",
+                    "integer": 0,
+                    "number": 0.0,
+                    "boolean": False
+                }.get(ptype, "")
+        return example if example else None
+    except Exception:
+        return None
 
 if __name__ == "__main__":
     from parser import fetch_openapi_spec, extract_endpoints

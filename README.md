@@ -1,159 +1,151 @@
-# 🧠 AI-Powered API Inspector  
-**Analyze • Summarize • Test — Any REST API → LangChain × Groq × Streamlit**
+# API Inspector
 
-![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
-![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red?logo=streamlit)
-![LangChain](https://img.shields.io/badge/LangChain-Framework-green)
-![Groq](https://img.shields.io/badge/LLM-Groq-orange)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
+A developer tool built with Streamlit and LangChain for discovering, summarizing, and testing REST APIs. 
+
+API Inspector automatically extracts endpoints from an OpenAPI specification, summarizes their purpose using a Groq LLM (`llama-3.3-70b-versatile`), and provides an interactive UI to test HTTP methods with auto-generated JSON request payloads. If no specification is found, it falls back to static HTML scraping, JS-rendered page scraping (via Playwright), or brute-force common endpoint probing.
 
 ---
 
-## 🚀 Overview
-**AI-Powered API Inspector** is an intelligent developer tool that lets you  
-analyze 🔍 → summarize 🧠 → and test 🧪 any REST API from one place.  
-It automatically discovers endpoints (via OpenAPI, Swagger, or HTML fallback), explains them in plain English using **LangChain + Groq**, visualizes API structure, and lets you fire live requests with an integrated Postman-like tester.
+## 🚀 Project Overview
+
+**Problem:** Exploring an undocumented or poorly documented API often requires manually hunting through network tabs, guessing endpoints, and piecing together `curl` commands just to get a basic understanding of the system. 
+
+**Solution:** API Inspector accelerates the initial API discovery phase. By simply providing a base URL, developers can instantly view available endpoints, generate human-readable documentation via an LLM, and fire test requests—all within a single dashboard.
+
+**Target Audience:** Backend engineers, API testers, and frontend developers integrating third-party services.
 
 ---
 
 ## ✨ Key Features
-| Category | Description |
-|-----------|-------------|
-| 🧩 **Automatic Endpoint Discovery** | Fetches OpenAPI specs / Swagger JSON / HTML fallback for undocumented APIs. |
-| 🤖 **AI Summarization (LangChain + Groq)** | Converts raw endpoints into human-readable summaries. |
-| 📊 **Interactive Dashboard** | Metrics + tables + Altair bar charts showing endpoint distribution. |
-| 🧠 **Smart Tester** | Auto-prefills query/body JSON for POST & PUT endpoints. |
-| 💡 **Contextual Hints** | Detects 4xx/5xx responses → suggests fixes or missing data. |
-| 💾 **Caching & Persistence** | Uses `st.cache_data` + `st.session_state` for snappy reloads. |
-| 📥 **Export Options** | Download AI summary as Markdown + raw JSON of endpoints. |
-| 🐳 **Docker-Ready** | Build & run anywhere in one command. |
+
+*   **OpenAPI Specification Parsing:** Automatically detects and parses `openapi.json`, `swagger.json`, or `spec.json`, resolving nested `$ref` schema references.
+*   **Multi-Tier Endpoint Discovery:** 
+    *   Tier 1: Specification parsing.
+    *   Tier 2: Static HTML and Playwright-driven JS rendering to scrape documentation pages.
+    *   Tier 3: Probing common API paths (`/api/v1/users`, `/products`, etc.).
+*   **Interactive Testing:** Allows immediate testing of discovered endpoints, auto-prefilling request bodies and query parameters directly from the OpenAPI schema.
+*   **AI Summarization:** Utilizes LangChain and Groq to generate a concise, developer-friendly markdown summary of endpoint purposes.
+*   **Data Export:** Download structured Markdown documentation or raw JSON dumps of discovered endpoints.
+
+---
+
+## 🔍 Demo Workflows
+
+To test the strongest capabilities of the application, try the following public APIs:
+
+1.  **JSONPlaceholder (Full CRUD & Specs)**
+    *   **URL:** `https://jsonplaceholder.typicode.com`
+    *   **Workflow:** Enter the URL and click analyze. HTML scraping will discover standard GET methods. 
+2.  **Httpbin (Robust OpenAPI Discovery)**
+    *   **URL:** `https://httpbin.org`
+    *   **Workflow:** The parser will automatically locate `/spec.json` and extract over 100 endpoints, clearly separating POST, PUT, DELETE, and GET methods with interactive schema generation.
+3.  **DummyJSON (E-commerce Data)**
+    *   **URL:** `https://dummyjson.com`
 
 ---
 
 ## 🧰 Tech Stack
-- **Frontend:** Streamlit (Python)  
-- **Backend:** LangChain + Groq LLM  
-- **Visualization:** Altair + Pandas  
-- **HTTP Engine:** Requests  
-- **Containerization:** Docker  
+
+**Frontend / UI:**
+*   Streamlit
+*   Altair (Data visualization)
+*   Pandas (Data structuring)
+
+**Backend / Logic:**
+*   Python 3.12
+*   Requests & HTTPX (Network requests)
+*   Playwright & BeautifulSoup4 (HTML and JS-rendered DOM scraping)
+
+**AI Components:**
+*   LangChain Core
+*   ChatGroq (`llama-3.3-70b-versatile`)
+
+**Deployment:**
+*   Docker
 
 ---
 
-## ⚙️ Installation
+## 🧩 Architecture Flow
 
-### 🔹 Local Setup
+```text
+User Input (Base URL & Token)
+  │
+  ▼
+OpenAPI Specification Parsing ──(Failure)──► Playwright JS / HTML Scraping
+  │                                                  │
+  │                                           (Failure)
+  │                                                  │
+  ▼                                                  ▼
+Endpoint Extraction ◄──────────────────────── Common Path Probing
+  │
+  ├──► AI Summarization (LangChain + Groq)
+  │
+  └──► Interactive Testing Layer (Auto-prefills Schema JSON)
+         │
+         ▼
+       Response Inspection
+```
+
+---
+
+## 📂 Project Structure
+
+```text
+api-inspector/
+├── .env.example          # Environment variable template
+├── README.md             # Project documentation
+├── dockerfile            # Docker configuration
+├── requirements.txt      # Python dependencies
+├── backend/
+│   ├── parser.py         # Spec detection, schema resolution, and Playwright scraping
+│   └── summarizer.py     # LangChain LCEL chain for Groq LLM summarization
+└── ui/
+    └── app.py            # Streamlit dashboard and testing execution
+```
+
+---
+
+## ⚙️ Local Setup
+
+Ensure you have Python 3.12+ installed.
+
 ```bash
-# 1️⃣ Clone repository
+# 1. Clone repository
 git clone https://github.com/<your-username>/api-inspector.git
 cd api-inspector
 
-# 2️⃣ Create virtual environment
+# 2. Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate       # Windows → venv\Scripts\activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 
-# 3️⃣ Install dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4️⃣ Configure environment
-cp .env.example .env
-# → edit .env and add your GROQ_API_KEY
+# 4. Install Playwright browser binaries (Required for JS scraping)
+playwright install chromium
 
-# 5️⃣ Run app
+# 5. Configure environment variables
+cp .env.example .env
+# Edit .env and add your GROQ_API_KEY
+
+# 6. Run the application
 streamlit run ui/app.py
 ```
-→ Opens at **http://localhost:8501**
+*The application will be accessible at `http://localhost:8501`*
 
 ---
 
-### 🔹 Docker
+## ⚠️ Current Limitations
 
-```bash
-docker build -t api-inspector .
-docker run -p 8501:8501 api-inspector
-```
-
-→ Visit **http://localhost:8501**
+*   **Authentication Rigidity:** The UI currently only supports injecting `Bearer {token}` headers. APIs utilizing custom keys (e.g., `X-API-KEY`) require manual modification of `ui/app.py`.
+*   **Method Detection without Specs:** If no OpenAPI specification is found, the HTML/Probing fallbacks default to registering endpoints as `GET`. `POST/PUT/DELETE` endpoints are difficult to infer reliably without a formal specification.
+*   **Rate Limits:** Scanning public APIs without a spec triggers multiple fallback probes, which may result in temporary IP bans or 429 Too Many Requests errors.
 
 ---
 
-## 🔑 Environment Variables
+## 🧭 Roadmap
 
-```bash
-# Example .env
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-> Don’t forget: your real `.env` is ignored in `.gitignore` — only `.env.example` is committed.
-
----
-
-## 🧠 Usage Guide
-1. **Enter Base API URL** — e.g. `https://petstore3.swagger.io/api/v3/`  
-2. **(Optional) Provide Token** — paste your Bearer token (for `Authorization` header).  
-   > For APIs like **CoinMarketCap**, change header key to `X-CMC_PRO_API_KEY` in `app.py`.
-3. **Click “Analyze API”** — Inspector auto-detects endpoints.  
-4. **Explore Dashboard** — metrics, tables, & endpoint distribution chart.  
-5. **Open “🧠 AI Summary”** — view Groq-generated explanations.  
-6. **Try Endpoints** — select one → edit JSON → “Send Test Request.”  
-7. **Export Results** — download Markdown or JSON summaries.  
-
-If no OpenAPI spec is found, the app now displays  
-> “ℹ️ No OpenAPI spec detected — manual input only.”  
-
-so you can still test endpoints manually.
-
----
-
-## 🔍 Example APIs to Try
-| API | Base URL | Works with |
-|------|-----------|-----------|
-| 🐶 Swagger Petstore 3.0 | `https://petstore3.swagger.io/api/v3/` | ✅ Full auto + AI summary |
-| 🧠 ReqRes API | `https://reqres.in/api` | ⚙️ Manual testing |
-| 💾 DummyJSON | `https://dummyjson.com` | ⚙️ HTML fallback |
-| ⚙️ httpbin | `https://httpbin.org` | ✅ Tests auth header via `/anything` |
-| 💰 CoinMarketCap Pro | `https://pro-api.coinmarketcap.com/v1/` | ✅ Use `X-CMC_PRO_API_KEY` header |
-
----
-
-
-## 🧩 Architecture
-```
-┌──────────────────────────┐
-│        Streamlit UI      │
-│ Inputs · Charts · Tester │
-└────────────┬─────────────┘
-             │
-             ▼
-┌──────────────────────────┐
-│      Backend (Python)    │
-│ parser.py → Scan         │
-│ summarizer.py → Groq AI  │
-│ utils/verify.py → Ping   │
-└────────────┬─────────────┘
-             │
-             ▼
-┌──────────────────────────┐
-│   External APIs / LLMs   │
-│   – Any REST API         │
-│   – Groq via LangChain   │
-└──────────────────────────┘
-```
-
----
-
-## 🧭 Future Enhancements
-- 🌙 Dark mode toggle  
-- 🔐 OAuth2 / JWT auth presets  
-- 🧾 Integrated API logging  
-- 📈 Latency analytics & response-time charts  
-- 🧩 VS Code / Chrome extension  
-- ☁️ Deploy to Streamlit Cloud or Hugging Face Spaces  
-
-
----
-
-## 📄 License
-Licensed under the **MIT License** — free for personal & commercial use.
-
----
+*   **Dynamic Authentication:** UI support for OAuth2, Basic Auth, and custom Header injection.
+*   **Expanded Specification Support:** Add parsers for Postman Collections and GraphQL schemas.
+*   **MCP Integration:** Integrate a Model Context Protocol (MCP) server for local tool utilization.
+*   **Persistent Histories:** SQLite implementation for maintaining request histories across sessions.
